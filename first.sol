@@ -24,11 +24,16 @@ contract ERC721 is IERC721 {
     // Mapping from owner to operator approvals
     mapping(address => mapping(address => bool)) public isApprovedForAll;
 
-    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
-        return interfaceId == type(IERC721).interfaceId || interfaceId == type(IERC165).interfaceId;
+    function supportsInterface(
+        bytes4 interfaceId
+    ) external pure returns (bool) {
+        return
+            interfaceId == type(IERC721).interfaceId ||
+            interfaceId == type(IERC165).interfaceId;
     }
 
-    function ownerOf(uint256 id) external view returns (address owner) { //Doubts
+    function ownerOf(uint256 id) external view returns (address owner) {
+        //Doubts
         owner = _ownerOf[id];
         require(owner != address(0), "token doesn't exist");
     }
@@ -62,7 +67,10 @@ contract ERC721 is IERC721 {
 
     function approve(address spender, uint256 id) external {
         address owner = _ownerOf[id];
-        require(msg.sender == owner || isApprovedForAll[owner][msg.sender], "not authorized");
+        require(
+            msg.sender == owner || isApprovedForAll[owner][msg.sender],
+            "not authorized"
+        );
 
         _approvals[id] = spender;
 
@@ -74,8 +82,14 @@ contract ERC721 is IERC721 {
         return _approvals[id];
     }
 
-    function _isApprovedOrOwner(address owner, address spender, uint256 id) internal view returns (bool) {
-        return (spender == owner || isApprovedForAll[owner][spender] || spender == _approvals[id]);
+    function _isApprovedOrOwner(
+        address owner,
+        address spender,
+        uint256 id
+    ) internal view returns (bool) {
+        return (spender == owner ||
+            isApprovedForAll[owner][spender] ||
+            spender == _approvals[id]);
     }
 
     function transferFrom(address from, address to, uint256 id) public {
@@ -96,13 +110,38 @@ contract ERC721 is IERC721 {
     function safeTransferFrom(address from, address to, uint256 id) external {
         transferFrom(from, to, id);
 
-        require(to.code.length == 0 || IERC721Receiver(to).onERC721Received(msg.sender, from, id, "") == IERC721Receiver.onERC721Received.selector, "unsafe recipient");
+        require(
+            to.code.length == 0 ||
+                IERC721Receiver(to).onERC721Received(
+                    msg.sender,
+                    from,
+                    id,
+                    ""
+                ) ==
+                IERC721Receiver.onERC721Received.selector,
+            "unsafe recipient"
+        );
     }
 
-    function safeTransferFrom(address from, address to, uint256 id, bytes calldata data) external {
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 id,
+        bytes calldata data
+    ) external {
         transferFrom(from, to, id);
 
-        require(to.code.length == 0 || IERC721Receiver(to).onERC721Received(msg.sender, from, id, data) == IERC721Receiver.onERC721Received.selector, "unsafe recipient");
+        require(
+            to.code.length == 0 ||
+                IERC721Receiver(to).onERC721Received(
+                    msg.sender,
+                    from,
+                    id,
+                    data
+                ) ==
+                IERC721Receiver.onERC721Received.selector,
+            "unsafe recipient"
+        );
     }
 
     function _mint(address to, uint256 id) internal {
@@ -128,13 +167,23 @@ contract ERC721 is IERC721 {
     }
 }
 
-contract MyNFT is ERC721("New Token","NT"), Ownable(msg.sender) {
-    function mint(address to, uint256 id) external {
-        _mint(to, id);
+contract MyNFT is ERC721("New Token", "NT"), Ownable(msg.sender) {
+    uint256 public price = 0.08 ether;
+    function mint(uint256 id) external payable {
+        require(msg.value == price, "Insufficient balance!");
+        _mint(msg.sender, id);
+    }
+
+    function changePrice(uint256 _price) external onlyOwner {
+        price = _price;
     }
 
     function burn(uint256 id) external {
         require(msg.sender == _ownerOf[id], "not owner");
         _burn(id);
+    }
+
+    function withdraw() public onlyOwner {
+        payable(msg.sender).transfer(address(this).balance);
     }
 }
